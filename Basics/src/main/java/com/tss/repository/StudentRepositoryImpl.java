@@ -22,12 +22,12 @@ public class StudentRepositoryImpl implements StudentRepository {
 
         try {
             Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM Students");
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM students");
 
             while (resultSet.next()) {
                 students.add(new Student(
-                        resultSet.getInt("studentId"),
-                        resultSet.getInt("rollNumber"),
+                        resultSet.getInt("id"),
+                        resultSet.getInt("roll_number"),
                         resultSet.getInt("age"),
                         resultSet.getString("name")
                 ));
@@ -41,14 +41,15 @@ public class StudentRepositoryImpl implements StudentRepository {
     }
 
     @Override
-    public void addStudent(Student student) {
+    public void addStudent(Student student, int address_id) {
         try {
             PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO Students (rollNumber, age, name) VALUES (?, ?, ?)"
+                    "INSERT INTO students (roll_number, age, name, address_id) VALUES (?, ?, ?, ?)"
             );
             statement.setInt(1, student.getRollNumber());
             statement.setInt(2, student.getAge());
             statement.setString(3, student.getName());
+            statement.setInt(4, address_id);
 
             statement.executeUpdate();
         } catch (Exception e) {
@@ -60,7 +61,7 @@ public class StudentRepositoryImpl implements StudentRepository {
     public Student getStudentById(int id) {
         try {
             PreparedStatement statement = connection.prepareStatement(
-                    "SELECT * FROM Students WHERE studentId = ?"
+                    "SELECT * FROM students WHERE roll_number = ?"
             );
 
             statement.setInt(1, id);
@@ -69,11 +70,11 @@ public class StudentRepositoryImpl implements StudentRepository {
 
             if (resultSet.next()) {
                 return new Student(
-                        resultSet.getInt("studentId"),
-                        resultSet.getInt("rollNumber"),
+                        resultSet.getInt("id"),
+                        resultSet.getInt("roll_number"),
                         resultSet.getInt("age"),
                         resultSet.getString("name"),
-                        resultSet.getInt("addressId")
+                        resultSet.getInt("address_id")
                 );
             }
 

@@ -40,7 +40,7 @@ public class CourseRepositoryImpl implements CourseRepository {
     @Override
     public Course findById(int id) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM course WHERE id = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM course WHERE course_id = ?");
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {

@@ -21,10 +21,10 @@ public class EnrollmentRepositoryImpl implements EnrollmentRepository {
     public void enrollStudent(Course course, Student student) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "INSERT INTO enrollment (course_id, student_id) VALUES (?, ?)"
+                    "INSERT INTO enrolled (course_id, student_id) VALUES (?, ?)"
             );
             preparedStatement.setInt(1, course.getCourseId());
-            preparedStatement.setInt(2, student.getStudentId());
+            preparedStatement.setInt(2, student.getRollNumber());
             preparedStatement.executeUpdate();
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -35,12 +35,19 @@ public class EnrollmentRepositoryImpl implements EnrollmentRepository {
     public List<Student> getEnrolledStudents(int id) {
         List<Student> students = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM enrollment JOIN cource WHERE course_id = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT s.* FROM enrolled e JOIN students s ON e.student_id = s.roll_number WHERE e.course_id = ?"
+            );
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
-            students.add(
-                    new Student(resultSet.getInt("roll_number"), resultSet.getInt("age"), resultSet.getString("name"))
-            );
+            while (resultSet.next()) {
+                students.add(new Student(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("roll_number"),
+                        resultSet.getInt("age"),
+                        resultSet.getString("name")
+                ));
+            }
             return students;
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -52,15 +59,18 @@ public class EnrollmentRepositoryImpl implements EnrollmentRepository {
     public List<Course> getCoursesByStudent(int id) {
         List<Course> courses = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM course JOIN student WHERE student_id = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT c.* FROM enrolled e JOIN course c ON e.course_id = c.course_id WHERE e.student_id = ?"
+            );
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
-            courses.add(
-                    new Course(
-                            resultSet.getString("name"),
-                            resultSet.getDouble("fees")
-                    )
-            );
+            while (resultSet.next()) {
+                courses.add(new Course(
+                        resultSet.getInt("course_id"),
+                        resultSet.getString("name"),
+                        resultSet.getDouble("fees")
+                ));
+            }
             return courses;
         } catch (Exception e) {
             System.out.println(e.getMessage());
