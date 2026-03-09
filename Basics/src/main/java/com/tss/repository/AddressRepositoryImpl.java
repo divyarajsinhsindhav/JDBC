@@ -55,7 +55,7 @@ public class AddressRepositoryImpl implements AddressRepository {
     public int save(Address address) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "INSERT INTO address (city, state, pincode) VALUES (?, ?, ?) RETURNING address_id"
+                    "INSERT INTO address (city, state, pincode) VALUES (?, ?, ?) RETURNING id"
             );
             preparedStatement.setString(1, address.getCity());
             preparedStatement.setString(2, address.getState());

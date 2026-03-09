@@ -16,7 +16,7 @@ public class EnrollmentServiceImpl implements EnrollementService {
 
     @Override
     public void enrollStudent(Course course, Student student) {
-       enrollmentRepository.enrollStudent(course, student);
+        enrollmentRepository.enrollStudent(course, student);
     }
 
     @Override
