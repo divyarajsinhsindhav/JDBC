@@ -35,17 +35,36 @@ public class EnrollmentRepositoryImpl implements EnrollmentRepository {
     public List<Student> getEnrolledStudents(int id) {
         List<Student> students = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM enrollment WHERE student_id = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM enrollment JOIN cource WHERE course_id = ?");
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
-
+            students.add(
+                    new Student(resultSet.getInt("roll_number"), resultSet.getInt("age"), resultSet.getString("name"))
+            );
+            return students;
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+        return students;
     }
 
     @Override
-    public List<Course> getEnrolledCourses(int id) {
-        return List.of();
+    public List<Course> getCoursesByStudent(int id) {
+        List<Course> courses = new ArrayList<>();
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM course JOIN student WHERE student_id = ?");
+            preparedStatement.setInt(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            courses.add(
+                    new Course(
+                            resultSet.getString("name"),
+                            resultSet.getDouble("fees")
+                    )
+            );
+            return courses;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        return courses;
     }
 }

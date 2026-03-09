@@ -8,5 +8,5 @@ import java.util.List;
 public interface EnrollmentRepository {
     void enrollStudent(Course course, Student student);
     List<Student> getEnrolledStudents(int id);
-    List<Course> getEnrolledCourses(int id);
+    List<Course> getCoursesByStudent(int id);
 }
