@@ -1,5 +1,6 @@
 package com.foodapp;
 
+import com.foodapp.config.DbConnection;
 import com.foodapp.controller.AdminController;
 import com.foodapp.controller.AuthController;
 import com.foodapp.controller.CustomerController;
@@ -15,6 +16,7 @@ import com.foodapp.service.*;
 import com.foodapp.utils.InputValidation;
 import com.foodapp.utils.SessionManager;
 
+import java.sql.Connection;
 import java.util.Scanner;
 
 public class Main {
@@ -32,10 +34,11 @@ public class Main {
     }
 
     private static void initialize() {
-
+        Connection connection = DbConnection.connect();
         UserRepository userRepository = new InMemoryUserRepository();
         InMemoryCartRepository inMemoryCartRepository = new InMemoryCartRepository();
         InMemoryOrderRepository inMemoryOrderRepository = new InMemoryOrderRepository();
+        MenuRepository menuRepository = new MenuRepositoryImpl(connection);
 
         CustomerService customerService = new CustomerService(userRepository);
         CartService cartService = new CartService(inMemoryCartRepository, customerService);

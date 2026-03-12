@@ -1,16 +1,28 @@
 package com.foodapp.model;
 
-import java.util.List;
-
 public class FoodItem implements Menu {
     private int id;
     private String name;
     private double price;
+    private int categoryId;
 
-    public FoodItem(int id, String name, double price) {
-        this.id = id;
+    public FoodItem() {
+
+    }
+
+    public FoodItem(String name, double price) {
         this.name = name;
         this.price = price;
+    }
+
+    public FoodItem(int id, String name, double price) {
+        this(name, price);
+        this.id = id;
+    }
+
+    public FoodItem(int id, String name, double price, int categoryId) {
+        this(id, name, price);
+        this.categoryId = categoryId;
     }
 
     public int getId() {
@@ -25,19 +37,20 @@ public class FoodItem implements Menu {
         return price;
     }
 
-    @Override
-    public void add(Menu item) {
-        throw new UnsupportedOperationException();
+    public int getCategoryId() {
+        return categoryId;
     }
 
-    @Override
-    public void remove(Menu item) {
-        throw new UnsupportedOperationException();
+    public void setName(String newName) {
+        this.name = newName;
     }
 
-    @Override
-    public List<Menu> getMenu() {
-        throw new UnsupportedOperationException();
+    public void setPrice(double newPrice) {
+        this.price = newPrice;
+    }
+
+    public void setCategoryId(int categoryId) {
+        this.categoryId = categoryId;
     }
 
     @Override
@@ -53,13 +66,5 @@ public class FoodItem implements Menu {
                 text,
                 ".".repeat(dots),
                 price);
-    }
-
-    public void setName(String newName) {
-        this.name = newName;
-    }
-
-    public void setPrice(double newPrice) {
-        this.price = newPrice;
     }
 }

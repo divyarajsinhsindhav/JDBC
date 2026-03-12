@@ -1,6 +1,5 @@
 package com.foodapp.utils;
 
-import com.foodapp.model.FlatDiscount;
 import com.foodapp.model.User;
 
 public class SessionManager {
@@ -23,7 +22,7 @@ public class SessionManager {
         currentUser = null;
     }
 
-    public User getCurrentCustomer() {
+    public User getCurrentUser() {
         return currentUser;
     }
 

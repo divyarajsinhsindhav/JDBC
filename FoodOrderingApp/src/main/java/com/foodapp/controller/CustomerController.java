@@ -106,7 +106,7 @@ public class CustomerController {
     }
 
     private void addItemToCart() {
-        User customer = sessionManager.getCurrentCustomer();
+        User customer = sessionManager.getCurrentUser();
         do {
             menuService.displayMenu();
 
@@ -147,7 +147,7 @@ public class CustomerController {
 
     private void removeItemFromCart() {
 
-        User customer = sessionManager.getCurrentCustomer();
+        User customer = sessionManager.getCurrentUser();
 
         try {
             displayCart();
@@ -170,7 +170,7 @@ public class CustomerController {
 
     private void updateCart() {
 
-        User customer = sessionManager.getCurrentCustomer();
+        User customer = sessionManager.getCurrentUser();
         displayCart();
         int orderItemId = InputValidation.readPositiveInt(scanner, "Enter Food Item ID: ");
 
@@ -192,7 +192,7 @@ public class CustomerController {
 
     private void getAllOrders() {
 
-        User customer = sessionManager.getCurrentCustomer();
+        User customer = sessionManager.getCurrentUser();
 
         List<Order> customerOrder = orderService.getOrdersByCustomer(customer);
 
@@ -222,7 +222,7 @@ public class CustomerController {
 
     private void displayCart() {
 
-        User customer = sessionManager.getCurrentCustomer();
+        User customer = sessionManager.getCurrentUser();
         List<OrderItem> cart = cartService.getCart(customer.getId());
 
         if (cart == null || cart.isEmpty()) {
@@ -281,7 +281,7 @@ public class CustomerController {
 
     private void placeOrder() throws InterruptedException {
 
-        User customer = sessionManager.getCurrentCustomer();
+        User customer = sessionManager.getCurrentUser();
 
         List<OrderItem> cart = cartService.getCart(customer.getId());
 

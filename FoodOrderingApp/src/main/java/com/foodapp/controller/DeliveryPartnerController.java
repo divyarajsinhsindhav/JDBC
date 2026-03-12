@@ -1,7 +1,5 @@
 package com.foodapp.controller;
 
-import com.foodapp.model.DeliveryPartner;
-import com.foodapp.model.Order;
 import com.foodapp.model.User;
 import com.foodapp.service.DeliveryPartnerService;
 import com.foodapp.utils.InputValidation;
@@ -47,12 +45,12 @@ public class DeliveryPartnerController {
     }
 
     private void deliverOrder() {
-        User deliveryPartner = sessionManager.getCurrentCustomer();
+        User deliveryPartner = sessionManager.getCurrentUser();
         deliveryPartnerService.deliverOrder(deliveryPartner.getEmail());
     }
 
     public void getDeliveryPartnersOrder() {
-        User deliveryPartner = sessionManager.getCurrentCustomer();
+        User deliveryPartner = sessionManager.getCurrentUser();
         deliveryPartnerService.getOrdersByDeliveryPartner(deliveryPartner.getEmail())
                 .forEach(order -> {
 
