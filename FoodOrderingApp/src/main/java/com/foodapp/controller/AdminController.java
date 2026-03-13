@@ -208,7 +208,7 @@ public class AdminController {
             ;
 
             try {
-                menuService.addCategory(parentCategoryId, categoryId, categoryName);
+                menuService.addCategory(parentCategoryId, categoryName);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }

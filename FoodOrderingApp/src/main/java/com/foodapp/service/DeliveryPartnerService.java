@@ -4,7 +4,7 @@ import com.foodapp.model.DeliveryPartner;
 import com.foodapp.model.DeliveryPartnerStatus;
 import com.foodapp.model.Order;
 import com.foodapp.model.OrderStatus;
-import com.foodapp.repository.InMemoryOrderRepository;
+import com.foodapp.repository.OrderRepository;
 import com.foodapp.repository.UserRepository;
 
 import java.util.Collections;
@@ -15,17 +15,17 @@ import java.util.stream.Collectors;
 public class DeliveryPartnerService {
 
     private final UserRepository userRepository;
-    private final InMemoryOrderRepository inMemoryOrderRepository;
+    private final OrderRepository orderRepository;
     private final Random random;
     private OrderService orderService;
 
     public DeliveryPartnerService(UserRepository userRepository,
-            InMemoryOrderRepository inMemoryOrderRepository) {
-        if (userRepository == null || inMemoryOrderRepository == null) {
+            OrderRepository orderRepository) {
+        if (userRepository == null || orderRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
         }
         this.userRepository = userRepository;
-        this.inMemoryOrderRepository = inMemoryOrderRepository;
+        this.orderRepository = orderRepository;
         this.random = new Random();
     }
 
@@ -85,7 +85,7 @@ public class DeliveryPartnerService {
 
     public List<Order> getOrdersByDeliveryPartner(int id) {
         DeliveryPartner partner = getDeliveryPartnerById(id);
-        List<Order> orders = inMemoryOrderRepository.getAllOrders()
+        List<Order> orders = orderRepository.getAllOrders()
                 .stream()
                 .filter(order -> order.getDeliveryPartner() != null
                         && order.getDeliveryPartner().getId() == id)
@@ -101,7 +101,7 @@ public class DeliveryPartnerService {
         if (partner == null) {
             throw new IllegalArgumentException("Delivery Partner not found with email: " + email);
         }
-        List<Order> orders = inMemoryOrderRepository.getAllOrders()
+        List<Order> orders = orderRepository.getAllOrders()
                 .stream()
                 .filter(order -> order.getDeliveryPartner() != null
                         && email.equals(order.getDeliveryPartner().getEmail()))

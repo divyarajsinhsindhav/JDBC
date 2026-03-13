@@ -1,19 +1,19 @@
 package com.foodapp.service;
 
 import com.foodapp.model.*;
-import com.foodapp.repository.InMemoryCartRepository;
+import com.foodapp.repository.CartRepository;
 
 import java.util.List;
 import java.util.Map;
 
 public class CartService {
 
-    private InMemoryCartRepository inMemoryCartRepository;
-    private CustomerService customerService;
+    private final CartRepository cartRepository;
+    private final CustomerService customerService;
 
-    public CartService(InMemoryCartRepository inMemoryCartRepository, CustomerService customerService) {
+    public CartService(CartRepository cartRepository, CustomerService customerService) {
         this.customerService = customerService;
-        this.inMemoryCartRepository = inMemoryCartRepository;
+        this.cartRepository = cartRepository;
     }
 
     public void addOrderItemToCart(Integer customerId, OrderItem orderItem) {
@@ -23,27 +23,17 @@ public class CartService {
         if (customerId == null) {
             throw new IllegalArgumentException("Customer Id cannot be null");
         }
-        User customer = customerService.findCustomerById(customerId);
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
-        }
-        inMemoryCartRepository.addToCart(customerId, orderItem);
+        validateCustomer(customerId);
+        cartRepository.addToCart(customerId, orderItem);
     }
 
     public OrderItem getOrderItemFromCart(Integer customerId, int orderItemId) {
-
-        User customer = customerService.findCustomerById(customerId);
-
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
+        validateCustomer(customerId);
+        OrderItem item = cartRepository.getCartItem(customerId, orderItemId);
+        if (item == null) {
+            throw new IllegalArgumentException("Order item not found in cart");
         }
-
-        return inMemoryCartRepository.getCart(customerId)
-                .stream()
-                .filter(item -> item.getId() == orderItemId)
-                .findFirst()
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Order item not found in cart"));
+        return item;
     }
 
     public void removeOrderItemFromCart(Integer customerId, OrderItem orderItem) {
@@ -53,78 +43,61 @@ public class CartService {
         if (customerId == null) {
             throw new IllegalArgumentException("Customer Id cannot be null");
         }
-        User customer = customerService.findCustomerById(customerId);
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
-        }
-        inMemoryCartRepository.removeFromCart(customerId, orderItem);
+        validateCustomer(customerId);
+        cartRepository.removeCartItem(customerId, orderItem.getId());
     }
 
     public void updateOrderItemQuantity(Integer customerId, OrderItem orderItem) {
         if (orderItem == null) {
             throw new IllegalArgumentException("Order Item cannot be null");
         }
-
         if (customerId == null) {
             throw new IllegalArgumentException("Customer Id cannot be null");
         }
+        validateCustomer(customerId);
 
-        User customer = customerService.findCustomerById(customerId);
-
-        OrderItem itemFromCart = inMemoryCartRepository.getCart(customerId)
-                .stream()
-                .filter(item -> item.getId() == orderItem.getId())
-                .findFirst()
-                .orElse(null);
-        if (itemFromCart == null) {
+        // Verify item exists in cart before updating
+        OrderItem existing = cartRepository.getCartItem(customerId, orderItem.getId());
+        if (existing == null) {
             throw new IllegalArgumentException("Order item not found in cart");
         }
 
-        itemFromCart.setQuantity(orderItem.getQuantity());
-        itemFromCart.setPrice(orderItem.getFoodItem().getPrice() *  orderItem.getQuantity());
-
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
-        }
+        cartRepository.updateCartItemQuantity(customerId, orderItem.getId(), orderItem.getQuantity());
     }
 
     public List<OrderItem> getCart(Integer customerId) {
-        User customer = customerService.findCustomerById(customerId);
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
-        }
-
-        return inMemoryCartRepository.getCart(customerId);
+        validateCustomer(customerId);
+        return cartRepository.getCart(customerId);
     }
 
     public Map<Integer, List<OrderItem>> getCart() {
-        return inMemoryCartRepository.getCart();
+        return cartRepository.getCart();
     }
 
     public void clearCustomerCart(Integer customerId) {
-        User customer = customerService.findCustomerById(customerId);
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
-        }
-        inMemoryCartRepository.clearCart(customerId);
+        validateCustomer(customerId);
+        cartRepository.clearCart(customerId);
     }
 
     public OrderItem getFoodItemExisted(Integer customerId, FoodItem foodItem) {
-        return inMemoryCartRepository.getCart(customerId).
-                stream()
+        return cartRepository.getCart(customerId)
+                .stream()
                 .filter(item -> item.getFoodItem().getId() == foodItem.getId())
                 .findFirst()
                 .orElse(null);
     }
 
-    public void updateOrderItemQuantityIfAlreadyExist(int customerId, OrderItem foodItemExisted, int quantity) {
-        inMemoryCartRepository.getCart(customerId).stream()
-                .filter(item -> item.getId() == foodItemExisted.getId())
-                .findFirst()
-                .ifPresent(orderItem -> {
-                    orderItem.setQuantity(foodItemExisted.getQuantity() + quantity);
-                    orderItem.setPrice(foodItemExisted.getFoodItem().getPrice() * foodItemExisted.getQuantity());
-                });
+    public void updateOrderItemQuantityIfAlreadyExist(int customerId, OrderItem existingItem, int additionalQuantity) {
+        int newQuantity = existingItem.getQuantity() + additionalQuantity;
+        cartRepository.updateCartItemQuantity(customerId, existingItem.getId(), newQuantity);
+    }
 
+    // ─── HELPER ──────────────────────────────────────────────────────────────────
+
+    private void validateCustomer(Integer customerId) {
+        User customer = customerService.findCustomerById(customerId);
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer not found");
+        }
     }
 }

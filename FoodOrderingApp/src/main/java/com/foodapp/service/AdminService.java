@@ -3,6 +3,8 @@ package com.foodapp.service;
 import com.foodapp.model.*;
 import com.foodapp.repository.UserRepository;
 
+import javax.management.relation.Role;
+
 public class AdminService {
     private UserRepository userRepository;
 
@@ -14,11 +16,11 @@ public class AdminService {
         if (email.isEmpty()) {
             throw new IllegalArgumentException("Email is empty");
         }
-        return userRepository.getAdmins()
-                .stream()
-                .filter(admin -> admin.getEmail().equals(email))
-                .findFirst()
-                .orElse(null);
+        Admin admin = (Admin)userRepository.getUserByEmail(email);
+        if (admin.getRole() ==  UserType.ADMIN) {
+            return admin;
+        }
+        return null;
     }
 
 }

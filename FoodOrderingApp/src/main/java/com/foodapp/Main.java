@@ -35,20 +35,19 @@ public class Main {
 
     private static void initialize() {
         Connection connection = DbConnection.connect();
-        UserRepository userRepository = new InMemoryUserRepository();
-        InMemoryCartRepository inMemoryCartRepository = new InMemoryCartRepository();
-        InMemoryOrderRepository inMemoryOrderRepository = new InMemoryOrderRepository();
+        UserRepository userRepository = new UserRepositoryImpl(connection);
+        CartRepository cartRepository = new CartRepositoryImpl(connection);
+        OrderRepository orderRepository = new OrderRepositoryImpl(connection);
         MenuRepository menuRepository = new MenuRepositoryImpl(connection);
 
         CustomerService customerService = new CustomerService(userRepository);
-        CartService cartService = new CartService(inMemoryCartRepository, customerService);
+        CartService cartService = new CartService(cartRepository, customerService);
         MenuService menuService = new MenuService(cartService);
         DeliveryPartnerService deliveryPartnerService = new DeliveryPartnerService(userRepository,
-                inMemoryOrderRepository);
+                orderRepository);
         DiscountService discountService = new DiscountService();
-        InMemoryOrderQueue inMemoryOrderQueue = new InMemoryOrderQueue();
-        OrderService orderService = new OrderService(deliveryPartnerService, inMemoryOrderRepository,
-                inMemoryCartRepository, discountService, inMemoryOrderQueue);
+        OrderService orderService = new OrderService(deliveryPartnerService, orderRepository,
+                cartRepository, discountService);
         deliveryPartnerService.setOrderService(orderService);
         AuthService authService = new AuthService(userRepository);
 
