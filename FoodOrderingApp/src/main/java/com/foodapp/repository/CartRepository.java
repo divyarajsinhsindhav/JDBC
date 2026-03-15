@@ -14,5 +14,6 @@ public interface CartRepository {
     OrderItem getCartItem(Integer customerId, Integer orderId);
     void removeCartItem(Integer customerId, Integer orderId);
     void updateCartItemQuantity(Integer customerId, Integer orderId, Integer quantity);
+    void removeFoodItemFromAllCarts(int foodItemId);
 
 }

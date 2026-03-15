@@ -12,6 +12,7 @@ public class Order {
     private DeliveryPartner deliveryPartner;
     private double finalAmount;
     private OrderStatus orderStatus;
+    private int paymentId;  // FK to payment table
 
     public Order(int id, List<OrderItem> orderItems, User customer,
                  double total, double discountRate, PaymentMode mode,
@@ -58,6 +59,10 @@ public class Order {
         return finalAmount;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public void setCustomer(User customer) {
         this.customer = customer;
     }
@@ -72,6 +77,18 @@ public class Order {
 
     public OrderStatus getOrderStatus() {
         return orderStatus;
+    }
+
+    public int getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(int paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public void setPaymentMode(PaymentMode mode) {
+        this.mode = mode;
     }
 
     @Override

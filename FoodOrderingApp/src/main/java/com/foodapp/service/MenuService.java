@@ -2,53 +2,42 @@ package com.foodapp.service;
 
 import com.foodapp.exception.ItemNotFoundException;
 import com.foodapp.model.*;
+import com.foodapp.repository.MenuRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class MenuService {
-
-    private final Menu root;
+    
+    private MenuRepository menuRepository;
     private CartService cartService;
 
-    public MenuService(CartService cartService) {
-        this.root = new MenuCategory(0, "FOOD MENU");
+    public MenuService(MenuRepository menuRepository, CartService cartService) {
+        this.menuRepository = menuRepository;
         this.cartService = cartService;
     }
 
-    public Menu getRoot() {
-        return root;
+    public void addCategory(int parentId, String categoryName) {
+        MenuCategory menuCategory = new MenuCategory(categoryName);
+        menuCategory.setParentId(parentId);
+        menuRepository.addCategory(menuCategory);
     }
 
-    public void addCategory(int parentId, int id, String categoryName) {
-
-        Menu parent = findCategoryById(root, parentId);
-
-        if (parent == null) {
-            throw new RuntimeException("Parent category not found");
-        }
-
-        parent.add(new MenuCategory(id, categoryName));
-    }
-
-    public void addFoodItem(int categoryId, int id, String name, double price) {
-
-        MenuCategory category = findCategoryById(root, categoryId);
-
-        if (category == null) {
-            throw new RuntimeException("Category not found");
-        }
-
-        category.add(new FoodItem(id, name, price));
+    public void addFoodItem(int categoryId, String name, double price) {
+        FoodItem item = new FoodItem(name, price);
+        item.setCategoryId(categoryId);
+        menuRepository.addFoodItem(item);
     }
 
     public void displayMenu() {
-        root.render(0);
+        Menu root = menuRepository.getMenu(true);
+        if(root != null) {
+            root.render(0);
+        }
     }
 
     private MenuCategory findCategoryById(Menu menu, int id) {
-
         if (!(menu instanceof MenuCategory category)) {
             return null;
         }
@@ -66,7 +55,14 @@ public class MenuService {
     }
 
     public MenuCategory findCategoryByName(int parentCategoryId, String name) {
-        MenuCategory parentCategory = findCategoryById(root, parentCategoryId);
+        Menu root = menuRepository.getMenu(true);
+        MenuCategory parentCategory = null;
+        if(parentCategoryId == 0) {
+            parentCategory = (MenuCategory) root;
+        } else {
+            parentCategory = findCategoryById(root, parentCategoryId);
+        }
+
         if (parentCategory == null || name == null) {
             return null;
         }
@@ -83,7 +79,7 @@ public class MenuService {
         if (name == null) {
             return null;
         }
-        return getFoodItems().stream()
+        return getFoodItems(true).stream()
                 .filter(n -> n.getName().equalsIgnoreCase(name.trim()))
                 .findFirst()
                 .orElse(null);
@@ -103,46 +99,27 @@ public class MenuService {
     }
 
     public FoodItem findFoodItem(int id) {
-        return findFoodItemById(root, id);
-    }
-
-    private FoodItem findFoodItemById(Menu menu, int id) {
-
-        if (menu instanceof FoodItem item) {
-            if (item.getId() == id) {
-                return item;
-            }
-        }
-
-        if (menu instanceof MenuCategory category) {
-            for (Menu child : category.getMenu()) {
-                FoodItem result = findFoodItemById(child, id);
-                if (result != null) {
-                    return result;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public Menu getMenu()  {
-        return root;
+        return menuRepository.findFoodItemById(id, true);
     }
 
     public List<FoodItem> getFoodItems() {
+        return getFoodItems(true);
+    }
+
+    public List<FoodItem> getFoodItems(boolean isAdmin) {
         List<FoodItem> items = new ArrayList<>();
-        collectFoodItems(root, items);
+        Menu root = menuRepository.getMenu(isAdmin);
+        if(root != null) {
+             collectFoodItems(root, items);
+        }
         return items;
     }
 
     private void collectFoodItems(Menu menu, List<FoodItem> items) {
-
         if (menu instanceof FoodItem foodItem) {
             items.add(foodItem);
             return;
         }
-
         if (menu instanceof MenuCategory category) {
             for (Menu child : category.getMenu()) {
                 collectFoodItems(child, items);
@@ -151,24 +128,27 @@ public class MenuService {
     }
 
     public List<MenuCategory> getCategory() {
+        return getCategory(true);
+    }
+
+    public List<MenuCategory> getCategory(boolean isAdmin) {
         List<MenuCategory> categories = new ArrayList<>();
-        collectCategories(root, categories);
+        Menu root = menuRepository.getMenu(isAdmin);
+        if(root != null) {
+             collectCategories(root, categories);
+        }
         return categories;
     }
 
     private void collectCategories(Menu menu, List<MenuCategory> categories) {
-
         if (menu instanceof MenuCategory category) {
-            categories.add(category);
-
+            if(category.getId() != 0) {
+                 categories.add(category);
+            }
             for (Menu child : category.getMenu()) {
                 collectCategories(child, categories);
             }
         }
-    }
-
-    public MenuCategory findParentCategoryOfFoodItem(int itemId) {
-        return findParentCategoryOfFoodItem(root, itemId);
     }
 
     public void deleteItem(int itemId) {
@@ -178,55 +158,20 @@ public class MenuService {
             throw new ItemNotFoundException("Item not found");
         }
 
-        MenuCategory parent = findParentCategoryOfFoodItem(itemId);
+        menuRepository.deleteFoodItem(itemId);
 
-        if (parent != null) {
-            parent.getMenu().remove(item);
-
-            cartService.getCart()
-                    .values()
-                    .forEach(orderItems ->
-                            orderItems.removeIf(orderItem ->
-                                    orderItem.getFoodItem().getId() == itemId
-                            )
-                    );
-            System.out.println("Food item deleted successfully!");
+        cartService.removeFoodItemFromAllCarts(itemId);
+        System.out.println("Food item deleted successfully!");
+    }
+    
+    public void updateCategory(int categoryId, String newName) {
+        MenuCategory cat = menuRepository.findCategoryById(categoryId);
+        if (cat != null) {
+            cat.setCategory(newName);
         }
     }
-
-    private MenuCategory findParentCategoryOfFoodItem(Menu menu, int itemId) {
-
-        if (menu instanceof MenuCategory category) {
-
-            for (Menu child : category.getMenu()) {
-
-                if (child instanceof FoodItem foodItem && foodItem.getId() == itemId) {
-                    return category; // parent found
-                }
-
-                if (child instanceof MenuCategory) {
-                    MenuCategory result = findParentCategoryOfFoodItem(child, itemId);
-                    if (result != null) {
-                        return result;
-                    }
-                }
-            }
-        }
-
-        return null;
+    
+    public void updateFoodItem(FoodItem item) {
+        menuRepository.updateFoodItem(item);
     }
-
-    private void updateCategory(int categoryId, String newName) {
-        getCategory().stream()
-                .filter(category -> category.getId() == categoryId)
-                .findFirst()
-                .ifPresentOrElse(
-                        category -> {
-                            category.setCategory(newName);
-                            System.out.println("Category updated successfully!");
-                        },
-                        () -> System.out.println("Category not found!")
-                );
-    }
-
 }

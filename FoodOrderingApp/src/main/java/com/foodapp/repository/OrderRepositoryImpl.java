@@ -9,13 +9,23 @@ import java.util.List;
 public class OrderRepositoryImpl implements OrderRepository {
 
     private final Connection connection;
+    private final PaymentRepository paymentRepository;
 
-    public OrderRepositoryImpl(Connection connection) {
+    public OrderRepositoryImpl(Connection connection, PaymentRepository paymentRepository) {
         this.connection = connection;
+        this.paymentRepository = paymentRepository;
     }
 
     @Override
     public void addOrder(Order order) {
+
+        // 1. Persist payment first so we have the generated payment_id
+        PaymentRecord paymentRecord = new PaymentRecord();
+        paymentRecord.setMode(order.getPaymentMode());
+        paymentRecord.setCustomerId(order.getCustomer().getId());
+        paymentRecord.setAmount(order.getFinalAmount());
+        PaymentRecord savedPayment = paymentRepository.save(paymentRecord);
+
         String orderSql = """
                 INSERT INTO orders (customer_id, delivery_partner_id, total_amount, discount_rate,
                                     final_amount, address, status, payment_id)
@@ -40,7 +50,14 @@ public class OrderRepositoryImpl implements OrderRepository {
             ps.setString(6, address);
 
             ps.setString(7, order.getOrderStatus().name());
-            ps.setNull(8, Types.INTEGER); // payment handled separately
+
+            // 2. Link the saved payment row
+            if (savedPayment != null && savedPayment.getId() > 0) {
+                ps.setInt(8, savedPayment.getId());
+                order.setPaymentId(savedPayment.getId());
+            } else {
+                ps.setNull(8, Types.INTEGER);
+            }
 
             ps.executeUpdate();
 
@@ -49,6 +66,8 @@ public class OrderRepositoryImpl implements OrderRepository {
                 if (!keys.next()) throw new SQLException("Failed to retrieve generated order id.");
                 generatedId = keys.getInt(1);
             }
+
+            order.setId(generatedId);
 
             // Insert order items
             insertOrderItems(generatedId, order.getOrderItems());
@@ -117,12 +136,14 @@ public class OrderRepositoryImpl implements OrderRepository {
                        u.email AS customer_email,
                        c.phone AS customer_phone, c.address AS customer_address,
                        dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email,
-                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status
+                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status,
+                       p.mode AS payment_mode
                 FROM orders o
                 JOIN users u ON o.customer_id = u.id
                 JOIN customer c ON u.id = c.id
                 LEFT JOIN delivery_partner dp ON o.delivery_partner_id = dp.id
                 LEFT JOIN users dpu ON dp.id = dpu.id
+                LEFT JOIN payment p ON o.payment_id = p.id
                 WHERE o.is_deleted = false
                 ORDER BY o.created_at DESC
                 """;
@@ -139,12 +160,14 @@ public class OrderRepositoryImpl implements OrderRepository {
                        u.email AS customer_email,
                        c.phone AS customer_phone, c.address AS customer_address,
                        dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email,
-                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status
+                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status,
+                       p.mode AS payment_mode
                 FROM orders o
                 JOIN users u ON o.customer_id = u.id
                 JOIN customer c ON u.id = c.id
                 LEFT JOIN delivery_partner dp ON o.delivery_partner_id = dp.id
                 LEFT JOIN users dpu ON dp.id = dpu.id
+                LEFT JOIN payment p ON o.payment_id = p.id
                 WHERE o.customer_id = ? AND o.is_deleted = false
                 ORDER BY o.created_at DESC
                 """;
@@ -161,12 +184,14 @@ public class OrderRepositoryImpl implements OrderRepository {
                        u.email AS customer_email,
                        c.phone AS customer_phone, c.address AS customer_address,
                        dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email,
-                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status
+                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status,
+                       p.mode AS payment_mode
                 FROM orders o
                 JOIN users u ON o.customer_id = u.id
                 JOIN customer c ON u.id = c.id
                 LEFT JOIN delivery_partner dp ON o.delivery_partner_id = dp.id
                 LEFT JOIN users dpu ON dp.id = dpu.id
+                LEFT JOIN payment p ON o.payment_id = p.id
                 WHERE o.delivery_partner_id = ? AND o.is_deleted = false
                 ORDER BY o.created_at DESC
                 """;
@@ -183,12 +208,14 @@ public class OrderRepositoryImpl implements OrderRepository {
                        u.email AS customer_email,
                        c.phone AS customer_phone, c.address AS customer_address,
                        dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email,
-                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status
+                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status,
+                       p.mode AS payment_mode
                 FROM orders o
                 JOIN users u ON o.customer_id = u.id
                 JOIN customer c ON u.id = c.id
                 LEFT JOIN delivery_partner dp ON o.delivery_partner_id = dp.id
                 LEFT JOIN users dpu ON dp.id = dpu.id
+                LEFT JOIN payment p ON o.payment_id = p.id
                 WHERE o.status = ?::order_status AND o.is_deleted = false
                 ORDER BY o.created_at DESC
                 """;
@@ -226,7 +253,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 rs.getInt("customer_id"),
                 rs.getString("customer_name"),
                 rs.getString("customer_email"),
-                rs.getString("customer_password"),
+                null,  // password not needed here
                 rs.getString("customer_phone"),
                 rs.getString("customer_address")
         );
@@ -245,18 +272,28 @@ public class OrderRepositoryImpl implements OrderRepository {
             deliveryPartner.setStatus(DeliveryPartnerStatus.valueOf(rs.getString("dp_status")));
         }
 
+        // Map payment mode (nullable — payment row may not exist for very old orders)
+        PaymentMode paymentMode = null;
+        String modeStr = rs.getString("payment_mode");
+        if (modeStr != null) {
+            paymentMode = PaymentMode.valueOf(modeStr);
+        }
+
         Order order = new Order(
                 rs.getInt("id"),
                 new ArrayList<>(),   // items fetched separately
                 customer,
                 rs.getDouble("total_amount"),
                 rs.getDouble("discount_rate"),
-                null,                // PaymentMode not stored in joined query
+                paymentMode,
                 rs.getDouble("final_amount")
         );
 
         order.setOrderStatus(OrderStatus.valueOf(rs.getString("status")));
         order.setDeliveryPartner(deliveryPartner);
+
+        int paymentId = rs.getInt("payment_id");
+        if (!rs.wasNull()) order.setPaymentId(paymentId);
 
         return order;
     }

@@ -249,4 +249,15 @@ public class CartRepositoryImpl implements CartRepository {
             System.err.println("Error clearing cart: " + e.getMessage());
         }
     }
+
+    @Override
+    public void removeFoodItemFromAllCarts(int foodItemId) {
+        String sql = "DELETE FROM cart_items WHERE food_item_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, foodItemId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error removing food item from all carts: " + e.getMessage());
+        }
+    }
 }

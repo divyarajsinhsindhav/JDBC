@@ -6,10 +6,12 @@ import com.foodapp.model.Order;
 import com.foodapp.model.OrderStatus;
 import com.foodapp.repository.OrderRepository;
 import com.foodapp.repository.UserRepository;
+import com.foodapp.utils.InputValidation;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class DeliveryPartnerService {
@@ -17,6 +19,7 @@ public class DeliveryPartnerService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final Random random;
+    private final Scanner scanner = new Scanner(System.in);
     private OrderService orderService;
 
     public DeliveryPartnerService(UserRepository userRepository,
@@ -114,6 +117,13 @@ public class DeliveryPartnerService {
             throw new IllegalArgumentException("DeliveryPartner cannot be null");
         }
         deliveryPartner.setStatus(status);
+        // Persist to DB so the change survives restarts
+        userRepository.updateDeliveryPartnerStatus(deliveryPartner.getId(), status);
+
+        // When a partner becomes ACTIVE, assign them a queued order if any exists
+        if (status == DeliveryPartnerStatus.ACTIVE && orderService != null) {
+            orderService.assignQueuedOrderIfAny(deliveryPartner);
+        }
     }
 
     /**
@@ -145,9 +155,7 @@ public class DeliveryPartnerService {
         activeOrders.forEach(o -> System.out.printf("Order ID: %-5d | Customer: %-20s | Amount: %.2f%n",
                 o.getId(), o.getCustomer().getName(), o.getFinalAmount()));
 
-        System.out.print("Enter Order ID to mark as DELIVERED: ");
-        java.util.Scanner sc = new java.util.Scanner(System.in);
-        int orderId = sc.nextInt();
+        int orderId = InputValidation.readPositiveInt(scanner, "Enter Order ID to mark as DELIVERED: ");
 
         Order order = activeOrders.stream()
                 .filter(o -> o.getId() == orderId)

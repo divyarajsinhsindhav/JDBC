@@ -377,4 +377,19 @@ public class UserRepositoryImpl implements UserRepository {
             }
         };
     }
+
+    @Override
+    public void updateDeliveryPartnerStatus(int id, DeliveryPartnerStatus status) {
+        String sql = "UPDATE delivery_partner SET status = ?::delivery_partner_status WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, status.name());
+            ps.setInt(2, id);
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                System.err.println("updateDeliveryPartnerStatus: no partner found with id " + id);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error updating delivery partner status: " + e.getMessage());
+        }
+    }
 }

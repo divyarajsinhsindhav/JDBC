@@ -80,6 +80,7 @@ CREATE TABLE categories (
 CREATE TABLE food_items (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
     category_id INT,
     is_active BOOLEAN DEFAULT TRUE,
     is_deleted BOOLEAN DEFAULT FALSE,
@@ -153,4 +154,15 @@ CREATE TABLE order_status_history (
     CONSTRAINT fk_order_status_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
 
-INSERT INTO categories (name) VALUES ('MENU');
+
+CREATE TABLE discount (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    discount_rate DECIMAL(5,2) NOT NULL,
+    discount_on DECIMAL(10,2) NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

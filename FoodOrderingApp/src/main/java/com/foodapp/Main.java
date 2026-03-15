@@ -37,15 +37,17 @@ public class Main {
         Connection connection = DbConnection.connect();
         UserRepository userRepository = new UserRepositoryImpl(connection);
         CartRepository cartRepository = new CartRepositoryImpl(connection);
-        OrderRepository orderRepository = new OrderRepositoryImpl(connection);
         MenuRepository menuRepository = new MenuRepositoryImpl(connection);
+        DiscountRepository discountRepository = new DiscountRepositoryImpl(connection);
+        PaymentRepository paymentRepository = new PaymentRepositoryImpl(connection);
+        OrderRepository orderRepository = new OrderRepositoryImpl(connection, paymentRepository);
 
         CustomerService customerService = new CustomerService(userRepository);
         CartService cartService = new CartService(cartRepository, customerService);
-        MenuService menuService = new MenuService(cartService);
+        MenuService menuService = new MenuService(menuRepository, cartService);
         DeliveryPartnerService deliveryPartnerService = new DeliveryPartnerService(userRepository,
                 orderRepository);
-        DiscountService discountService = new DiscountService();
+        DiscountService discountService = new DiscountService(discountRepository);
         OrderService orderService = new OrderService(deliveryPartnerService, orderRepository,
                 cartRepository, discountService);
         deliveryPartnerService.setOrderService(orderService);
@@ -53,7 +55,7 @@ public class Main {
 
         SessionManager sessionManager = SessionManager.getSessionManager();
 
-        adminController = new AdminController(menuService, deliveryPartnerService, orderService);
+        adminController = new AdminController(menuService, deliveryPartnerService, orderService, discountService);
 
         customerController = new CustomerController(
                 customerService,
@@ -67,11 +69,6 @@ public class Main {
         deliveryPartnerController = new DeliveryPartnerController(deliveryPartnerService, sessionManager);
 
         authController = new AuthController(userRepository, authService, sessionManager);
-
-        MenuSeeder.seed(menuService);
-        AdminSeeder.seed(authService);
-        CustomerSeeder.seed(authService);
-        DeliveryPartnerSeeder.seed(authService);
     }
 
     private static void start() {

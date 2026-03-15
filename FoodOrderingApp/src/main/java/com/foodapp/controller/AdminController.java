@@ -2,11 +2,15 @@ package com.foodapp.controller;
 
 import com.foodapp.model.*;
 import com.foodapp.service.DeliveryPartnerService;
+import com.foodapp.service.DiscountService;
 import com.foodapp.service.MenuService;
 import com.foodapp.service.OrderService;
 import com.foodapp.utils.IdGenerator;
 import com.foodapp.utils.InputValidation;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -16,15 +20,21 @@ public class AdminController {
     private final MenuService menuService;
     private final DeliveryPartnerService deliveryPartnerService;
     private final OrderService orderService;
+    private final DiscountService discountService;
     private MenuController menuController;
+
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public AdminController(MenuService menuService,
             DeliveryPartnerService deliveryPartnerService,
-            OrderService orderService) {
+            OrderService orderService,
+            DiscountService discountService) {
         this.scanner = new Scanner(System.in);
         this.menuService = menuService;
         this.deliveryPartnerService = deliveryPartnerService;
         this.orderService = orderService;
+        this.discountService = discountService;
         this.menuController = new MenuController(menuService);
     }
 
@@ -100,38 +110,173 @@ public class AdminController {
         }
     }
 
+    // ── Discount sub-menu constants ──────────────────────────────────
+    private static final int DISC_LIST   = 1;
+    private static final int DISC_ADD    = 2;
+    private static final int DISC_UPDATE = 3;
+    private static final int DISC_TOGGLE = 4;
+    private static final int DISC_BACK   = 5;
+
     private void manageDiscount() {
-
-        FlatDiscount discount = FlatDiscount.getInstance();
-
         while (true) {
-
-            double rate = discount.getDiscount();
-            double minAmount = discount.getFlatDiscountOn();
-
-            System.out.println("\n====== Discount Policy ======");
-
-            if (rate == 0 && minAmount == 0) {
-                System.out.println("No discount policy configured.");
-            } else {
-                System.out.println("Current Policy:");
-                System.out.println("Discount Rate        : " + rate + "%");
-                System.out.println("Minimum Order Amount : " + minAmount);
-            }
-
-            System.out.println("\n1. Set / Update Discount Rate");
-            System.out.println("2. Set / Update Minimum Order Amount");
-            System.out.println("3. Back");
+            System.out.println("\n====== Manage Discounts ======");
+            System.out.println("1. View All Discounts");
+            System.out.println("2. Add Discount");
+            System.out.println("3. Update Discount");
+            System.out.println("4. Toggle Active / Inactive");
+            System.out.println("5. Back");
 
             int choice = InputValidation.readIntInRange(
-                    scanner, "Enter your choice: ", 1, 3);
+                    scanner, "Enter your choice: ", DISC_LIST, DISC_BACK);
 
             switch (choice) {
-                case 1 -> setDiscountRate();
-                case 2 -> setMinimumOrderAmountForDiscount();
-                case 3 -> {
-                    return;
-                }
+                case DISC_LIST   -> listDiscounts();
+                case DISC_ADD    -> addDiscount();
+                case DISC_UPDATE -> updateDiscount();
+                case DISC_TOGGLE -> toggleDiscountStatus();
+                case DISC_BACK   -> { return; }
+            }
+        }
+    }
+
+    // ── List all discounts ───────────────────────────────────────────
+    private void listDiscounts() {
+        List<Discount> discounts = discountService.getAllDiscounts();
+
+        if (discounts.isEmpty()) {
+            System.out.println("No discounts found.");
+            return;
+        }
+
+        System.out.println("\n" + "-".repeat(90));
+        System.out.printf("%-5s %-20s %-8s %-12s %-18s %-18s %-8s%n",
+                "ID", "Name", "Rate(%)", "Discount On", "Start Date", "End Date", "Active");
+        System.out.println("-".repeat(100));
+
+        for (Discount d : discounts) {
+            System.out.printf("%-5d %-20s %-8.2f %-12.2f %-18s %-18s %-8s%n",
+                    d.getId(),
+                    d.getName(),
+                    d.getDiscountRate(),
+                    d.getDiscountOn(),
+                    d.getStartDate().format(DATE_FMT),
+                    d.getEndDate().format(DATE_FMT),
+                    d.isActive() ? "YES" : "NO");
+        }
+        System.out.println("-".repeat(100));
+    }
+
+    // ── Add discount ─────────────────────────────────────────────────
+    private void addDiscount() {
+        System.out.println("\n========== Add Discount ==========");
+
+        do {
+            String name = InputValidation.readValidName(scanner, "Discount name       : ");
+
+            double rate = InputValidation.readPositiveDouble(scanner, "Discount rate (%)   : ");
+            double discountOn = InputValidation.readPositiveDouble(scanner, "Discount on amount  : ");
+
+            LocalDateTime startDate = readDateTime("Start date (yyyy-MM-dd HH:mm): ");
+            LocalDateTime endDate;
+            while (true) {
+                endDate = readDateTime("End   date (yyyy-MM-dd HH:mm): ");
+                if (endDate.isAfter(startDate)) break;
+                System.out.println("End date must be after start date. Try again.");
+            }
+
+            System.out.print("Activate immediately? (y/n): ");
+            boolean active = scanner.nextLine().trim().equalsIgnoreCase("y");
+
+            Discount discount = new Discount();
+            discount.setName(name);
+            discount.setDiscountRate(rate);
+            discount.setDiscountOn(discountOn);
+            discount.setStartDate(startDate);
+            discount.setEndDate(endDate);
+            discount.setActive(active);
+
+            Discount saved = discountService.addDiscount(discount);
+            System.out.println("Discount '" + saved.getName() + "' added with ID " + saved.getId() + ".");
+
+        } while (InputValidation.doUserWantToContinue(scanner, "Add another discount?"));
+    }
+
+    // ── Update discount ──────────────────────────────────────────────
+    private void updateDiscount() {
+        System.out.println("\n========== Update Discount ==========");
+
+        listDiscounts();
+
+        int id = InputValidation.readPositiveInt(scanner, "Enter Discount ID to update: ");
+        Discount existing = discountService.findById(id);
+
+        if (existing == null) {
+            System.out.println("Discount not found.");
+            return;
+        }
+
+        System.out.println("Current name       : " + existing.getName());
+        String name = InputValidation.readValidName(scanner, "New name            : ");
+
+        System.out.printf("Current rate       : %.2f%%%n", existing.getDiscountRate());
+        double rate = InputValidation.readPositiveDouble(scanner, "New rate (%)        : ");
+
+        System.out.printf("Current discount on: %.2f%n", existing.getDiscountOn());
+        double discountOn = InputValidation.readPositiveDouble(scanner, "New discount on     : ");
+
+        System.out.println("Current start date : " + existing.getStartDate().format(DATE_FMT));
+        LocalDateTime startDate = readDateTime("New start date (yyyy-MM-dd HH:mm): ");
+
+        System.out.println("Current end date   : " + existing.getEndDate().format(DATE_FMT));
+        LocalDateTime endDate;
+        while (true) {
+            endDate = readDateTime("New end date   (yyyy-MM-dd HH:mm): ");
+            if (endDate.isAfter(startDate)) break;
+            System.out.println("End date must be after start date. Try again.");
+        }
+
+        existing.setName(name);
+        existing.setDiscountRate(rate);
+        existing.setDiscountOn(discountOn);
+        existing.setStartDate(startDate);
+        existing.setEndDate(endDate);
+
+        Discount updated = discountService.updateDiscount(existing);
+        if (updated != null) {
+            System.out.println("Discount updated successfully.");
+        } else {
+            System.out.println("Update failed.");
+        }
+    }
+
+    // ── Toggle active status ─────────────────────────────────────────
+    private void toggleDiscountStatus() {
+        System.out.println("\n========== Toggle Discount Status ==========");
+
+        listDiscounts();
+
+        int id = InputValidation.readPositiveInt(scanner, "Enter Discount ID to toggle: ");
+
+        try {
+            Discount updated = discountService.toggleActive(id);
+            if (updated != null) {
+                System.out.println("Discount '" + updated.getName() + "' is now "
+                        + (updated.isActive() ? "ACTIVE" : "INACTIVE") + ".");
+            }
+        } catch (RuntimeException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // ── Helper: read and parse a LocalDateTime from user input ───────
+    private LocalDateTime readDateTime(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
+            try {
+                return LocalDateTime.parse(input, DATE_FMT);
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid format. Use yyyy-MM-dd HH:mm (e.g. 2025-12-31 23:59).");
             }
         }
     }
@@ -192,8 +337,6 @@ public class AdminController {
             int parentCategoryId = InputValidation.readPositiveZeroInt(
                     scanner, "Enter Parent Category ID (0 for root): ");
 
-            int categoryId = IdGenerator.getNextCategoryID();
-
             String categoryName;
 
             while (true) {
@@ -205,15 +348,13 @@ public class AdminController {
                 }
                 System.out.println("Category with " + categoryName + " already exists for parent category!");
             }
-            ;
 
             try {
                 menuService.addCategory(parentCategoryId, categoryName);
+                System.out.println("Category '" + categoryName + "' added successfully!");
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
-
-            System.out.println("Category '" + categoryName + "' added successfully!");
 
         } while (InputValidation.doUserWantToContinue(scanner,
                 "Do you want to add another category?"));
@@ -230,8 +371,6 @@ public class AdminController {
 
             int categoryId = InputValidation.readPositiveZeroInt(
                     scanner, "Enter category ID to add item: ");
-
-            int foodItemId = IdGenerator.getNextItemID();
 
             String itemName;
 
@@ -253,7 +392,7 @@ public class AdminController {
                     scanner, "Enter food item price: ");
 
             try {
-                menuService.addFoodItem(categoryId, foodItemId, itemName, itemPrice);
+                menuService.addFoodItem(categoryId, itemName, itemPrice);
                 System.out.println("Food item '" + itemName + "' added successfully!");
             } catch (Exception e) {
                 System.out.println(e.getMessage());
@@ -300,6 +439,8 @@ public class AdminController {
 
             item.setName(newName);
             item.setPrice(newPrice);
+            
+            menuService.updateFoodItem(item);
 
             System.out.println("Food item updated successfully!");
 
@@ -328,44 +469,6 @@ public class AdminController {
                 scanner, "Do you want to delete another item?"));
     }
 
-    private void setDiscountRate() {
-        FlatDiscount discount = FlatDiscount.getInstance();
-        double currentRate = discount.getDiscount();
-
-        System.out.println("\n--- Discount Rate Settings ---");
-
-        if (currentRate == 0) {
-            System.out.println("No discount rate configured.");
-        } else {
-            System.out.println("Current Discount Rate: " + currentRate + "%");
-        }
-        int newRate = InputValidation.readIntInRange(
-                scanner, "Enter new discount rate (%): ", 1, 100);
-
-        discount.setDiscount(newRate);
-
-        System.out.println("Discount rate is now set to " + newRate + "%.");
-    }
-
-    private void setMinimumOrderAmountForDiscount() {
-        FlatDiscount discount = FlatDiscount.getInstance();
-        double currentAmount = discount.getFlatDiscountOn();
-
-        System.out.println("\n--- Minimum Order Amount Settings ---");
-
-        if (currentAmount == 0) {
-            System.out.println("No minimum order amount configured.");
-        } else {
-            System.out.println("Current Minimum Order Amount: " + currentAmount);
-        }
-
-        double newAmount = InputValidation.readPositiveDouble(
-                scanner, "Enter minimum order amount required for discount: ");
-
-        discount.setFlatDiscountOn(newAmount);
-
-        System.out.println("Discount will now apply on orders above " + newAmount + ".");
-    }
 
     private void setStatusOfDeliveryPartner() {
         System.out.println("\n--- Change Delivery Partner Status ---");

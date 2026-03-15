@@ -3,7 +3,6 @@ package com.foodapp.service;
 import com.foodapp.exception.EmptyCartException;
 import com.foodapp.model.*;
 import com.foodapp.repository.CartRepository;
-import com.foodapp.repository.InMemoryCartRepository;
 import com.foodapp.repository.OrderRepository;
 
 import java.util.HashMap;
@@ -46,7 +45,7 @@ public class OrderService {
         }
 
         double total = cart.stream().mapToDouble(OrderItem::getPrice).sum();
-        double discountRate = discountService.applyFlatDiscount(total);
+        double discountRate = discountService.applyDiscount(total);
         double finalAmount = total - (total * discountRate / 100);
 
         Payment payment = PaymentFactory.getPaymentMethod(mode);
@@ -64,7 +63,7 @@ public class OrderService {
         if (freePartner != null) {
             order.setDeliveryPartner(freePartner);
             order.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
-            freePartner.setStatus(DeliveryPartnerStatus.BUSY);
+            deliveryPartnerService.changeDeliveryPartnerStatus(freePartner, DeliveryPartnerStatus.BUSY);
             orderRepository.addOrder(order);
             System.out.println("Delivery partner assigned: " + freePartner.getName());
         } else {
@@ -96,19 +95,29 @@ public class OrderService {
 
         order.setOrderStatus(OrderStatus.DELIVERED);
         orderRepository.updateOrderStatus(order);
-
-        // Partner is now free
-        partner.setStatus(DeliveryPartnerStatus.ACTIVE);
         System.out.println("Order #" + order.getId() + " delivered.");
 
-        // Auto-assign the oldest QUEUED order from DB if any
+        // Partner is now free, this will trigger assigning the next queued order if any
+        deliveryPartnerService.changeDeliveryPartnerStatus(partner, DeliveryPartnerStatus.ACTIVE);
+    }
+
+    /**
+     * Called when a delivery partner becomes ACTIVE.
+     * Assigns the oldest QUEUED order from DB if any exists.
+     */
+    public void assignQueuedOrderIfAny(DeliveryPartner partner) {
+        if (partner.getStatus() != DeliveryPartnerStatus.ACTIVE) {
+            return;
+        }
+
         List<Order> queuedOrders = orderRepository.getOrdersByStatus(OrderStatus.QUEUED);
         if (!queuedOrders.isEmpty()) {
-            Order nextOrder = queuedOrders.get(0); // oldest first (ORDER BY created_at ASC)
+            // Pick the oldest queued order (last element, because query returns DESC order)
+            Order nextOrder = queuedOrders.get(queuedOrders.size() - 1);
             nextOrder.setDeliveryPartner(partner);
             nextOrder.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
             orderRepository.updateOrderStatus(nextOrder);
-            partner.setStatus(DeliveryPartnerStatus.BUSY);
+            deliveryPartnerService.changeDeliveryPartnerStatus(partner, DeliveryPartnerStatus.BUSY);
             System.out.println("Auto-assigned queued order #" + nextOrder.getId()
                     + " to " + partner.getName());
         }

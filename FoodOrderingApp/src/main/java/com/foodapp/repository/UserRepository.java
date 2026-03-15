@@ -1,9 +1,6 @@
 package com.foodapp.repository;
 
-import com.foodapp.model.Admin;
-import com.foodapp.model.Customer;
-import com.foodapp.model.DeliveryPartner;
-import com.foodapp.model.User;
+import com.foodapp.model.*;
 
 import java.util.List;
 
@@ -29,4 +26,6 @@ public interface UserRepository {
     Admin getAdminById(int id);
 
     DeliveryPartner getDeliveryPartnerById(int id);
+
+    void updateDeliveryPartnerStatus(int id, DeliveryPartnerStatus status);
 }

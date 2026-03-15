@@ -19,7 +19,6 @@ public class MenuRepositoryImpl implements MenuRepository {
     @Override
     public Menu getMenu(boolean is_admin) {
         Map<Integer, MenuCategory> categoryMap = new HashMap<>();
-        MenuCategory root = new MenuCategory(0, "MENU");
 
         // Admin sees inactive categories too
         String catSql = is_admin
@@ -74,7 +73,7 @@ public class MenuRepositoryImpl implements MenuRepository {
                 MenuCategory child  = categoryMap.get(childId);
                 MenuCategory parent = categoryMap.get(parentId);
 
-                if (child != null && parent != null) {
+                if (child != null && parent != null && childId != 0) {
                     parent.add(child);
                 }
             }
@@ -83,27 +82,9 @@ public class MenuRepositoryImpl implements MenuRepository {
             System.err.println("Error wiring category tree: " + e.getMessage());
         }
 
-        // Admin sees inactive top-level categories too
-        String topLevelSql = is_admin
-                ? """
-              SELECT id FROM categories
-              WHERE is_deleted = false AND parent_category_id IS NULL
-              """
-                : """
-              SELECT id FROM categories
-              WHERE is_active = true AND is_deleted = false AND parent_category_id IS NULL
-              """;
-
-        try (PreparedStatement ps = connection.prepareStatement(topLevelSql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                MenuCategory cat = categoryMap.get(rs.getInt("id"));
-                if (cat != null) root.add(cat);
-            }
-
-        } catch (SQLException e) {
-            System.err.println("Error attaching top-level categories: " + e.getMessage());
+        MenuCategory root = categoryMap.get(0);
+        if (root == null) {
+            root = new MenuCategory(0, "MENU");
         }
 
         // Admin sees inactive food items too
@@ -212,11 +193,7 @@ public class MenuRepositoryImpl implements MenuRepository {
             ps.setString(1, foodItem.getName());
             ps.setDouble(2, foodItem.getPrice());
 
-            if (foodItem.getCategoryId() > 0) {
-                ps.setInt(3, foodItem.getCategoryId());
-            } else {
-                ps.setNull(3, Types.INTEGER);
-            }
+            ps.setInt(3, foodItem.getCategoryId());
 
             int affected = ps.executeUpdate();
             if (affected == 0) throw new SQLException("Insert failed, no rows affected.");
@@ -258,7 +235,7 @@ public class MenuRepositoryImpl implements MenuRepository {
         String sql = """
                 UPDATE food_items
                 SET name = ?, price = ?,
-                WHERE id = ? AND is_deleted = false AND is_active = true;
+                WHERE id = ? AND is_deleted = false;
                 """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -305,10 +282,10 @@ public class MenuRepositoryImpl implements MenuRepository {
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, category.getCategory());
 
-            if (category.getParentId() > 0) {
-                ps.setInt(2, category.getParentId());
-            } else {
+            if (category.getParentId() == 0) {
                 ps.setNull(2, Types.INTEGER);
+            } else {
+                ps.setInt(2, category.getParentId());
             }
 
             int affected = ps.executeUpdate();
@@ -320,7 +297,10 @@ public class MenuRepositoryImpl implements MenuRepository {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error adding category: " + e.getMessage());
+            if (e.getMessage() != null && e.getMessage().contains("violates foreign key constraint")) {
+                throw new RuntimeException("Failed to add category: Parent category with ID " + category.getParentId() + " does not exist.");
+            }
+            throw new RuntimeException("Error adding category: " + e.getMessage());
         }
     }
 

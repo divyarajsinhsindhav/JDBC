@@ -79,6 +79,10 @@ public class CartService {
         cartRepository.clearCart(customerId);
     }
 
+    public void removeFoodItemFromAllCarts(int foodItemId) {
+        cartRepository.removeFoodItemFromAllCarts(foodItemId);
+    }
+
     public OrderItem getFoodItemExisted(Integer customerId, FoodItem foodItem) {
         return cartRepository.getCart(customerId)
                 .stream()

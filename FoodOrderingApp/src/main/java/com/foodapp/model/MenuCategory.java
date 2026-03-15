@@ -69,6 +69,13 @@ public class MenuCategory implements Menu {
     @Override
     public void render(int level) {
 
+        if (id == 0) {
+            for (Menu item : items) {
+                item.render(level);
+            }
+            return;
+        }
+
         String indent = indent(level);
 
         if (level == 0) {
