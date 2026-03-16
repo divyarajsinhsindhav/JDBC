@@ -96,8 +96,6 @@ public class CartService {
         cartRepository.updateCartItemQuantity(customerId, existingItem.getId(), newQuantity);
     }
 
-    // ─── HELPER ──────────────────────────────────────────────────────────────────
-
     private void validateCustomer(Integer customerId) {
         User customer = customerService.findCustomerById(customerId);
         if (customer == null) {

@@ -408,7 +408,7 @@ public class AdminController {
         System.out.println("\n========== Update Food Item ==========");
 
         do {
-            menuService.displayMenu();
+            menuService.displayMenu(true);
 
             int itemId = InputValidation.readPositiveZeroInt(
                     scanner, "Enter Food Item ID to update: ");
@@ -454,7 +454,7 @@ public class AdminController {
 
         do {
 
-            menuService.displayMenu();
+            menuService.displayMenu(true);
 
             int itemId = InputValidation.readPositiveZeroInt(
                     scanner, "Enter Food Item ID to delete: ");
@@ -571,8 +571,8 @@ public class AdminController {
             order.getOrderItems().forEach(item -> {
                 String itemName = item.getFoodItem().getName();
                 int qty = item.getQuantity();
-                double price = item.getFoodItem().getPrice();
-                double total = qty * price;
+                double price = item.getPrice();
+                double total = item.getSubtotal();
                 System.out.printf("  %-20s | Qty: %-3d | Price: %-8.2f | Total: %-8.2f%n",
                         itemName, qty, price, total);
             });

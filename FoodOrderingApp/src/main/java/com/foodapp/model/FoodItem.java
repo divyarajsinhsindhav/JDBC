@@ -5,6 +5,7 @@ public class FoodItem implements Menu {
     private String name;
     private double price;
     private int categoryId;
+    private boolean isActive = true;
 
     public FoodItem() {
 
@@ -23,6 +24,14 @@ public class FoodItem implements Menu {
     public FoodItem(int id, String name, double price, int categoryId) {
         this(id, name, price);
         this.categoryId = categoryId;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
     }
 
     public int getId() {
@@ -56,9 +65,9 @@ public class FoodItem implements Menu {
     @Override
     public void render(int level) {
 
-        String text = id + "  " + name;
+        String text = id + "  " + name + (isActive ? "" : " (Inactive)");
 
-        int width = 40;
+        int width = 45;
         int dots = Math.max(2, width - text.length());
 
         System.out.printf("%s%s%s ₹%.2f%n",

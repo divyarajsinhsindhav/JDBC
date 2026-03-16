@@ -44,7 +44,7 @@ public class OrderService {
             throw new IllegalArgumentException("Customer cannot be null!");
         }
 
-        double total = cart.stream().mapToDouble(OrderItem::getPrice).sum();
+        double total = cart.stream().mapToDouble(OrderItem::getSubtotal).sum();
         double discountRate = discountService.applyDiscount(total);
         double finalAmount = total - (total * discountRate / 100);
 

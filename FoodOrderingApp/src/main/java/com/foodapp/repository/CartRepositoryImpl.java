@@ -66,7 +66,7 @@ public class CartRepositoryImpl implements CartRepository {
                             rs.getInt("id"),
                             foodItem,
                             rs.getInt("quantity"),
-                            foodItem.getPrice() * rs.getInt("quantity")
+                            foodItem.getPrice()
                     ));
                 }
             }
@@ -135,7 +135,7 @@ public class CartRepositoryImpl implements CartRepository {
                                 rs.getInt("id"),
                                 foodItem,
                                 rs.getInt("quantity"),
-                                foodItem.getPrice() * rs.getInt("quantity")
+                                foodItem.getPrice()
                         );
                     }
                 }

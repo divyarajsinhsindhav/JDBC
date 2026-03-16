@@ -30,12 +30,12 @@ public class InvoicePrinter {
 
         int i = 1;
         for (OrderItem item : order.getOrderItems()) {
-            double total = item.getFoodItem().getPrice() * item.getQuantity();
+            double total = item.getSubtotal();
             System.out.printf("│  %-4d  %-22s  %-4d  %-7.2f  %-7.2f │%n",
                     i++,
                     item.getFoodItem().getName(),
                     item.getQuantity(),
-                    item.getFoodItem().getPrice(),
+                    item.getPrice(),
                     total);
         }
 

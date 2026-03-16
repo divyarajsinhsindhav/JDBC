@@ -31,7 +31,11 @@ public class MenuService {
     }
 
     public void displayMenu() {
-        Menu root = menuRepository.getMenu(true);
+        displayMenu(false);
+    }
+
+    public void displayMenu(boolean isAdmin) {
+        Menu root = menuRepository.getMenu(isAdmin);
         if(root != null) {
             root.render(0);
         }
@@ -103,7 +107,7 @@ public class MenuService {
     }
 
     public List<FoodItem> getFoodItems() {
-        return getFoodItems(true);
+        return getFoodItems(false);
     }
 
     public List<FoodItem> getFoodItems(boolean isAdmin) {
@@ -128,7 +132,7 @@ public class MenuService {
     }
 
     public List<MenuCategory> getCategory() {
-        return getCategory(true);
+        return getCategory(false);
     }
 
     public List<MenuCategory> getCategory(boolean isAdmin) {

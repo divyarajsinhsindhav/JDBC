@@ -41,6 +41,10 @@ public class OrderItem {
         return price;
     }
 
+    public double getSubtotal() {
+        return price * quantity;
+    }
+
     public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
