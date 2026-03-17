@@ -19,17 +19,21 @@ public class MenuRepositoryImpl implements MenuRepository {
     @Override
     public Menu getMenu(boolean is_admin) {
         Map<Integer, MenuCategory> categoryMap = new HashMap<>();
+        // Store parent_category_id alongside each category for wiring later
+        Map<Integer, Integer> parentIdMap = new HashMap<>();
+        // Synthetic fallback root (used only when DB has no row with id=0)
+        MenuCategory root = new MenuCategory(0, "MENU");
+        categoryMap.put(0, root);
 
-        // Admin sees inactive categories too
         String catSql = is_admin
                 ? """
-              SELECT id, name, parent_category_id
+              SELECT id, name, parent_category_id, is_active
               FROM categories
               WHERE is_deleted = false
               ORDER BY id
               """
                 : """
-              SELECT id, name, parent_category_id
+              SELECT id, name, parent_category_id, is_active
               FROM categories
               WHERE is_active = true AND is_deleted = false
               ORDER BY id
@@ -39,63 +43,48 @@ public class MenuRepositoryImpl implements MenuRepository {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                MenuCategory cat = new MenuCategory(
-                        rs.getInt("id"),
-                        rs.getString("name")
-                );
-                categoryMap.put(cat.getId(), cat);
+                int catId = rs.getInt("id");
+                MenuCategory cat = new MenuCategory(catId, rs.getString("name"));
+                cat.setActive(rs.getBoolean("is_active"));
+                categoryMap.put(catId, cat);
+
+                // Record the parent (NULL → -1 meaning "root-level / no parent")
+                int parentId = rs.getInt("parent_category_id");
+                parentIdMap.put(catId, rs.wasNull() ? -1 : parentId);
             }
 
         } catch (SQLException e) {
             System.err.println("Error loading categories: " + e.getMessage());
         }
 
-        // Admin sees inactive parent-child relationships too
-        String parentSql = is_admin
-                ? """
-              SELECT id, parent_category_id
-              FROM categories
-              WHERE is_deleted = false AND parent_category_id IS NOT NULL
-              """
-                : """
-              SELECT id, parent_category_id
-              FROM categories
-              WHERE is_active = true AND is_deleted = false AND parent_category_id IS NOT NULL
-              """;
+        root = categoryMap.getOrDefault(0, root);
 
-        try (PreparedStatement ps = connection.prepareStatement(parentSql);
-             ResultSet rs = ps.executeQuery()) {
+        for (Map.Entry<Integer, Integer> entry : parentIdMap.entrySet()) {
+            int childId  = entry.getKey();
+            int parentId = entry.getValue();
 
-            while (rs.next()) {
-                int childId  = rs.getInt("id");
-                int parentId = rs.getInt("parent_category_id");
+            if (childId == 0) continue; // root itself — skip
 
-                MenuCategory child  = categoryMap.get(childId);
-                MenuCategory parent = categoryMap.get(parentId);
+            MenuCategory child  = categoryMap.get(childId);
+            // parentId == -1 means NULL parent → attach to root
+            MenuCategory parent = (parentId == -1)
+                    ? root
+                    : categoryMap.getOrDefault(parentId, root);
 
-                if (child != null && parent != null && childId != 0) {
-                    parent.add(child);
-                }
+            if (child != null) {
+                parent.add(child);
             }
-
-        } catch (SQLException e) {
-            System.err.println("Error wiring category tree: " + e.getMessage());
-        }
-
-        MenuCategory root = categoryMap.get(0);
-        if (root == null) {
-            root = new MenuCategory(0, "MENU");
         }
 
         // Admin sees inactive food items too
         String itemSql = is_admin
                 ? """
-              SELECT id, name, price, category_id
+              SELECT id, name, price, category_id, is_active
               FROM food_items
               WHERE is_deleted = false
               """
                 : """
-              SELECT id, name, price, category_id
+              SELECT id, name, price, category_id, is_active
               FROM food_items
               WHERE is_active = true AND is_deleted = false
               """;
@@ -109,13 +98,16 @@ public class MenuRepositoryImpl implements MenuRepository {
                         rs.getString("name"),
                         rs.getDouble("price")
                 );
+                item.setActive(rs.getBoolean("is_active"));
 
                 int categoryId = rs.getInt("category_id");
+                item.setCategoryId(categoryId);
+                
                 MenuCategory parent = categoryMap.get(categoryId);
 
                 if (parent != null) {
                     parent.add(item);
-                } else {
+                } else if (categoryId == 0 || root.getId() == categoryId) {
                     root.add(item);
                 }
             }

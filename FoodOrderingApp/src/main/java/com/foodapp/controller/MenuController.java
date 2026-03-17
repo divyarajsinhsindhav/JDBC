@@ -10,7 +10,7 @@ public class MenuController {
 
     public void displayMenu() {
 
-        menuService.displayMenu();
+        menuService.displayMenu(true);
 
     }
 
@@ -22,10 +22,11 @@ public class MenuController {
         System.out.printf("| %-4s | %-28s | %-10s |%n", "ID", "ITEM NAME", "PRICE");
         System.out.println("+------+------------------------------+------------+");
 
-        menuService.getFoodItems().forEach(foodItem -> {
+        menuService.getFoodItems(true).forEach(foodItem -> {
+            String displayName = foodItem.getName() + (foodItem.isActive() ? "" : " (I)");
             System.out.printf("| %-4d | %-28s | %-10.2f |%n",
                     foodItem.getId(),
-                    foodItem.getName(),
+                    displayName,
                     foodItem.getPrice());
         });
 
@@ -39,11 +40,12 @@ public class MenuController {
         System.out.printf("%-10s %-30s%n", "ID", "CATEGORY");
         System.out.println("---------------------------------------");
 
-        menuService.getCategory()
+        menuService.getCategory(true)
                 .forEach(category -> {
+                    String displayName = category.getCategory() + (category.isActive() ? "" : " (I)");
                     System.out.printf("%-10d %-30s%n",
                             category.getId(),
-                            category.getCategory());
+                            displayName);
                 });
 
         System.out.println("---------------------------------------");

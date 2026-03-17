@@ -133,7 +133,7 @@ public class CustomerController {
 
             int id = IdGenerator.getNextOrderItemID();
 
-            double price = foodItem.getPrice() * quantity;
+            double price = foodItem.getPrice();
 
             OrderItem orderItem = new OrderItem(id, foodItem, quantity, price);
 
@@ -241,9 +241,9 @@ public class CustomerController {
         double subtotal = 0.0;
         for (OrderItem item : cart) {
 
-            double unitPrice = item.getFoodItem().getPrice();
+            double unitPrice = item.getPrice();
             int quantity = item.getQuantity();
-            subtotal = unitPrice * quantity;
+            subtotal = item.getSubtotal();
 
             totalAmount += subtotal;
 

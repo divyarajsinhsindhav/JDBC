@@ -7,6 +7,7 @@ public class MenuCategory implements Menu {
     private int id;
     private String category;
     private int parentId;
+    private boolean isActive = true;
     private List<Menu> items = new ArrayList<>();
 
     public MenuCategory() {
@@ -25,6 +26,14 @@ public class MenuCategory implements Menu {
     public MenuCategory(int id, String category, int parentId) {
         this(id, category);
         this.parentId = parentId;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
     }
 
     public int getId() {
@@ -71,24 +80,40 @@ public class MenuCategory implements Menu {
 
         if (id == 0) {
             for (Menu item : items) {
-                item.render(level);
+                if (item instanceof FoodItem) {
+                    item.render(level);
+                }
+            }
+            for (Menu item : items) {
+                if (item instanceof MenuCategory) {
+                    item.render(level);
+                }
             }
             return;
         }
 
         String indent = indent(level);
+        
+        String displayText = category.toUpperCase() + (isActive ? "" : " (INACTIVE)");
 
         if (level == 0) {
             System.out.println("\n==================================================");
-            System.out.printf("%s%s%n", indent, category.toUpperCase());
+            System.out.printf("%s%s%n", indent, displayText);
             System.out.println("==================================================");
         } else {
-            System.out.printf("\n%s[ %s ]%n", indent, category.toUpperCase());
+            System.out.printf("\n%s[ %s ]%n", indent, displayText);
             System.out.printf("%s--------------------------------------------------%n", indent);
         }
 
         for (Menu item : items) {
-            item.render(level + 1);
+            if (item instanceof FoodItem) {
+                item.render(level + 1);
+            }
+        }
+        for (Menu item : items) {
+            if (item instanceof MenuCategory) {
+                item.render(level + 1);
+            }
         }
     }
 }
