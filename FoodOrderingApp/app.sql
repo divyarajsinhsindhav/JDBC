@@ -166,3 +166,11 @@ CREATE TABLE discount (
     is_deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+WITH new_admin AS (
+INSERT INTO users (name, email, password, role)
+VALUES ('Admin User', 'admin@example.com', 'Admin123', 'ADMIN')
+    RETURNING id
+    )
+INSERT INTO admin (id)
+SELECT id FROM new_admin;
