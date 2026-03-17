@@ -14,29 +14,36 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         this.connection = connection;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  Helper: map a ResultSet row → Discount object
-    // ─────────────────────────────────────────────────────────────
     private Discount mapRow(ResultSet rs) throws SQLException {
         Discount d = new Discount();
+
         d.setId(rs.getInt("id"));
         d.setName(rs.getString("name"));
         d.setDiscountRate(rs.getDouble("discount_rate"));
         d.setDiscountOn(rs.getDouble("discount_on"));
         Timestamp startTs = rs.getTimestamp("start_date");
-        if (startTs != null) d.setStartDate(startTs.toLocalDateTime());
+
+        if (startTs != null) {
+            d.setStartDate(startTs.toLocalDateTime());
+        }
+
         Timestamp endTs = rs.getTimestamp("end_date");
-        if (endTs != null) d.setEndDate(endTs.toLocalDateTime());
+
+        if (endTs != null) {
+            d.setEndDate(endTs.toLocalDateTime());
+        }
+
         d.setActive(rs.getBoolean("is_active"));
         d.setDeleted(rs.getBoolean("is_deleted"));
         Timestamp createdAt = rs.getTimestamp("created_at");
-        if (createdAt != null) d.setCreatedAt(createdAt.toLocalDateTime());
+
+        if (createdAt != null) {
+            d.setCreatedAt(createdAt.toLocalDateTime());
+        }
+
         return d;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  INSERT
-    // ─────────────────────────────────────────────────────────────
     @Override
     public Discount addDiscount(Discount discount) {
         String sql = """
@@ -66,9 +73,6 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         return discount;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  UPDATE (name, rate, dates)
-    // ─────────────────────────────────────────────────────────────
     @Override
     public Discount updateDiscount(Discount discount) {
         String sql = """
@@ -96,9 +100,6 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         return discount;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  TOGGLE is_active
-    // ─────────────────────────────────────────────────────────────
     @Override
     public Discount toggleActive(int id) {
         String sql = """
@@ -120,9 +121,6 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         return findById(id);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  SOFT DELETE
-    // ─────────────────────────────────────────────────────────────
     @Override
     public void deleteDiscount(int id) {
         String sql = "UPDATE discount SET is_deleted = true WHERE id = ?";
@@ -138,9 +136,6 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  FIND BY ID
-    // ─────────────────────────────────────────────────────────────
     @Override
     public Discount findById(int id) {
         String sql = """
@@ -160,9 +155,6 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         return null;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  LIST ALL (non-deleted)
-    // ─────────────────────────────────────────────────────────────
     @Override
     public List<Discount> getAllDiscounts() {
         List<Discount> list = new ArrayList<>();
@@ -182,9 +174,6 @@ public class DiscountRepositoryImpl implements DiscountRepository {
         return list;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  GET CURRENTLY ACTIVE DISCOUNTS (covers TODAY)
-    // ─────────────────────────────────────────────────────────────
     @Override
     public List<Discount> getActiveDiscounts() {
         List<Discount> list = new ArrayList<>();

@@ -110,7 +110,6 @@ public class AdminController {
         }
     }
 
-    // ── Discount sub-menu constants ──────────────────────────────────
     private static final int DISC_LIST   = 1;
     private static final int DISC_ADD    = 2;
     private static final int DISC_UPDATE = 3;
@@ -139,7 +138,6 @@ public class AdminController {
         }
     }
 
-    // ── List all discounts ───────────────────────────────────────────
     private void listDiscounts() {
         List<Discount> discounts = discountService.getAllDiscounts();
 
@@ -166,7 +164,6 @@ public class AdminController {
         System.out.println("-".repeat(100));
     }
 
-    // ── Add discount ─────────────────────────────────────────────────
     private void addDiscount() {
         System.out.println("\n========== Add Discount ==========");
 
@@ -201,7 +198,6 @@ public class AdminController {
         } while (InputValidation.doUserWantToContinue(scanner, "Add another discount?"));
     }
 
-    // ── Update discount ──────────────────────────────────────────────
     private void updateDiscount() {
         System.out.println("\n========== Update Discount ==========");
 
@@ -249,7 +245,6 @@ public class AdminController {
         }
     }
 
-    // ── Toggle active status ─────────────────────────────────────────
     private void toggleDiscountStatus() {
         System.out.println("\n========== Toggle Discount Status ==========");
 
@@ -268,7 +263,6 @@ public class AdminController {
         }
     }
 
-    // ── Helper: read and parse a LocalDateTime from user input ───────
     private LocalDateTime readDateTime(String prompt) {
         while (true) {
             System.out.print(prompt);

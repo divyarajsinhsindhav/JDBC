@@ -32,7 +32,6 @@ public class DeliveryPartnerService {
         this.random = new Random();
     }
 
-    // Called after OrderService is created to break circular dependency
     public void setOrderService(OrderService orderService) {
         this.orderService = orderService;
     }
@@ -41,20 +40,12 @@ public class DeliveryPartnerService {
         return userRepository.getDeliveryPartners();
     }
 
-    /**
-     * Returns true if at least one partner is ACTIVE (even if BUSY).
-     * Used to block order placement when ALL partners are INACTIVE.
-     */
     public boolean checkDeliveryPartnerAvailable() {
         return userRepository.getDeliveryPartners()
                 .stream()
                 .anyMatch(dp -> dp.getStatus() != DeliveryPartnerStatus.INACTIVE);
     }
 
-    /**
-     * Returns a randomly selected ACTIVE (not BUSY, not INACTIVE) partner,
-     * or null if all active partners are currently BUSY.
-     */
     public DeliveryPartner getFreeDeliveryPartner() {
         List<DeliveryPartner> freePartners = userRepository.getDeliveryPartners()
                 .stream()
@@ -117,10 +108,9 @@ public class DeliveryPartnerService {
             throw new IllegalArgumentException("DeliveryPartner cannot be null");
         }
         deliveryPartner.setStatus(status);
-        // Persist to DB so the change survives restarts
+
         userRepository.updateDeliveryPartnerStatus(deliveryPartner.getId(), status);
 
-        // When a partner becomes ACTIVE, assign them a queued order if any exists
         if (status == DeliveryPartnerStatus.ACTIVE && orderService != null) {
             orderService.assignQueuedOrderIfAny(deliveryPartner);
         }

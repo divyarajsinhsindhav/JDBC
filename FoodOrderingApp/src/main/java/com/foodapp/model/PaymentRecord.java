@@ -2,10 +2,6 @@ package com.foodapp.model;
 
 import java.time.LocalDateTime;
 
-/**
- * Represents a persisted row in the `payment` table.
- * Distinct from the Payment *interface* (which is the strategy pattern for UPI/Cash).
- */
 public class PaymentRecord {
 
     private int id;
@@ -25,7 +21,7 @@ public class PaymentRecord {
         this.createdAt = createdAt;
     }
 
-    // ---- Getters ----
+
 
     public int getId() {
         return id;
@@ -47,7 +43,7 @@ public class PaymentRecord {
         return createdAt;
     }
 
-    // ---- Setters ----
+
 
     public void setId(int id) {
         this.id = id;

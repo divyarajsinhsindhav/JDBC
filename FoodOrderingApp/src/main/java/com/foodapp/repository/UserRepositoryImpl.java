@@ -31,7 +31,9 @@ public class UserRepositoryImpl implements UserRepository {
 
             int generatedId;
             try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (!keys.next()) throw new SQLException("Failed to retrieve generated user id.");
+                if (!keys.next()) {
+                    throw new SQLException("Failed to retrieve generated user id.");
+                }
                 generatedId = keys.getInt(1);
             }
 

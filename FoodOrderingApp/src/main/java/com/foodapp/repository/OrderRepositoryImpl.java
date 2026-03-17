@@ -19,7 +19,6 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public void addOrder(Order order) {
 
-        // 1. Persist payment first so we have the generated payment_id
         PaymentRecord paymentRecord = new PaymentRecord();
         paymentRecord.setMode(order.getPaymentMode());
         paymentRecord.setCustomerId(order.getCustomer().getId());
@@ -63,7 +62,9 @@ public class OrderRepositoryImpl implements OrderRepository {
 
             int generatedId;
             try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (!keys.next()) throw new SQLException("Failed to retrieve generated order id.");
+                if (!keys.next()) {
+                    throw new SQLException("Failed to retrieve generated order id.");
+                }
                 generatedId = keys.getInt(1);
             }
 
@@ -136,7 +137,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                        u.email AS customer_email,
                        c.phone AS customer_phone, c.address AS customer_address,
                        dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email,
-                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status,
+                       dp.phone AS dp_phone, dp.status AS dp_status,
                        p.mode AS payment_mode
                 FROM orders o
                 JOIN users u ON o.customer_id = u.id
@@ -183,8 +184,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                        u.id AS customer_id, u.name AS customer_name,
                        u.email AS customer_email,
                        c.phone AS customer_phone, c.address AS customer_address,
-                       dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email,
-                       dpu.password AS dp_password, dp.phone AS dp_phone, dp.status AS dp_status,
+                       dp.id AS dp_id, dpu.name AS dp_name, dpu.email AS dp_email, dp.phone AS dp_phone, dp.status AS dp_status,
                        p.mode AS payment_mode
                 FROM orders o
                 JOIN users u ON o.customer_id = u.id
@@ -230,8 +230,12 @@ public class OrderRepositoryImpl implements OrderRepository {
         List<Order> orders = new ArrayList<>();
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (intParam != null)    ps.setInt(1, intParam);
-            if (statusParam != null) ps.setString(1, statusParam.name());
+            if (intParam != null) {
+                ps.setInt(1, intParam);
+            }
+            if (statusParam != null) {
+                ps.setString(1, statusParam.name());
+            }
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -293,7 +297,9 @@ public class OrderRepositoryImpl implements OrderRepository {
         order.setDeliveryPartner(deliveryPartner);
 
         int paymentId = rs.getInt("payment_id");
-        if (!rs.wasNull()) order.setPaymentId(paymentId);
+        if (!rs.wasNull()) {
+            order.setPaymentId(paymentId);
+        }
 
         return order;
     }

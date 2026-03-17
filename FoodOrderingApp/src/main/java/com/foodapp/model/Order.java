@@ -12,7 +12,7 @@ public class Order {
     private DeliveryPartner deliveryPartner;
     private double finalAmount;
     private OrderStatus orderStatus;
-    private int paymentId;  // FK to payment table
+    private int paymentId;
 
     public Order(int id, List<OrderItem> orderItems, User customer,
                  double total, double discountRate, PaymentMode mode,

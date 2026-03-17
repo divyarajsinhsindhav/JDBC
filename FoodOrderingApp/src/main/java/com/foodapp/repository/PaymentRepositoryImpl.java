@@ -15,9 +15,6 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         this.connection = connection;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  Helper: map a ResultSet row → PaymentRecord
-    // ─────────────────────────────────────────────────────────────
     private PaymentRecord mapRow(ResultSet rs) throws SQLException {
         PaymentRecord p = new PaymentRecord();
         p.setId(rs.getInt("id"));
@@ -25,13 +22,12 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         p.setCustomerId(rs.getInt("customer_id"));
         p.setAmount(rs.getDouble("amount"));
         Timestamp createdAt = rs.getTimestamp("created_at");
-        if (createdAt != null) p.setCreatedAt(createdAt.toLocalDateTime());
+        if (createdAt != null) {
+            p.setCreatedAt(createdAt.toLocalDateTime());
+        }
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  INSERT
-    // ─────────────────────────────────────────────────────────────
     @Override
     public PaymentRecord save(PaymentRecord payment) {
         String sql = """
@@ -59,9 +55,6 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         return payment;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  FIND BY ID
-    // ─────────────────────────────────────────────────────────────
     @Override
     public PaymentRecord findById(int id) {
         String sql = """
@@ -81,9 +74,6 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         return null;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  FIND BY CUSTOMER
-    // ─────────────────────────────────────────────────────────────
     @Override
     public List<PaymentRecord> findByCustomerId(int customerId) {
         List<PaymentRecord> list = new ArrayList<>();
@@ -105,9 +95,6 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         return list;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  FIND ALL
-    // ─────────────────────────────────────────────────────────────
     @Override
     public List<PaymentRecord> findAll() {
         List<PaymentRecord> list = new ArrayList<>();

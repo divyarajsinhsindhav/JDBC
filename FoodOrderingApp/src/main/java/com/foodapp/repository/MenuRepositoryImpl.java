@@ -19,10 +19,10 @@ public class MenuRepositoryImpl implements MenuRepository {
     @Override
     public Menu getMenu(boolean is_admin) {
         Map<Integer, MenuCategory> categoryMap = new HashMap<>();
-        // Store parent_category_id alongside each category for wiring later
         Map<Integer, Integer> parentIdMap = new HashMap<>();
-        // Synthetic fallback root (used only when DB has no row with id=0)
+
         MenuCategory root = new MenuCategory(0, "MENU");
+
         categoryMap.put(0, root);
 
         String catSql = is_admin
@@ -48,7 +48,6 @@ public class MenuRepositoryImpl implements MenuRepository {
                 cat.setActive(rs.getBoolean("is_active"));
                 categoryMap.put(catId, cat);
 
-                // Record the parent (NULL → -1 meaning "root-level / no parent")
                 int parentId = rs.getInt("parent_category_id");
                 parentIdMap.put(catId, rs.wasNull() ? -1 : parentId);
             }
@@ -66,7 +65,7 @@ public class MenuRepositoryImpl implements MenuRepository {
             if (childId == 0) continue; // root itself — skip
 
             MenuCategory child  = categoryMap.get(childId);
-            // parentId == -1 means NULL parent → attach to root
+
             MenuCategory parent = (parentId == -1)
                     ? root
                     : categoryMap.getOrDefault(parentId, root);
@@ -76,7 +75,6 @@ public class MenuRepositoryImpl implements MenuRepository {
             }
         }
 
-        // Admin sees inactive food items too
         String itemSql = is_admin
                 ? """
               SELECT id, name, price, category_id, is_active

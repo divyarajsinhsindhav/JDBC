@@ -56,7 +56,6 @@ public class CartService {
         }
         validateCustomer(customerId);
 
-        // Verify item exists in cart before updating
         OrderItem existing = cartRepository.getCartItem(customerId, orderItem.getId());
         if (existing == null) {
             throw new IllegalArgumentException("Order item not found in cart");

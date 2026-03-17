@@ -11,7 +11,6 @@ public class DbConnection {
 
     private static Connection connection;
 
-    // Private constructor
     private DbConnection() {
 
     }

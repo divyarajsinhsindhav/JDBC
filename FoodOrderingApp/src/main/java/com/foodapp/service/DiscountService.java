@@ -13,23 +13,14 @@ public class DiscountService {
         this.discountRepository = discountRepository;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  ADMIN — Add new discount
-    // ─────────────────────────────────────────────────────────────
     public Discount addDiscount(Discount discount) {
         return discountRepository.addDiscount(discount);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  ADMIN — Update discount details
-    // ─────────────────────────────────────────────────────────────
     public Discount updateDiscount(Discount discount) {
         return discountRepository.updateDiscount(discount);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  ADMIN — Toggle active / inactive
-    // ─────────────────────────────────────────────────────────────
     public Discount toggleActive(int id) {
         Discount discount = discountRepository.findById(id);
         if (discount == null) {
@@ -38,9 +29,6 @@ public class DiscountService {
         return discountRepository.toggleActive(id);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  ADMIN — Soft-delete a discount
-    // ─────────────────────────────────────────────────────────────
     public void deleteDiscount(int id) {
         Discount discount = discountRepository.findById(id);
         if (discount == null) {
@@ -49,9 +37,6 @@ public class DiscountService {
         discountRepository.deleteDiscount(id);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  Query helpers
-    // ─────────────────────────────────────────────────────────────
     public Discount findById(int id) {
         return discountRepository.findById(id);
     }
@@ -60,12 +45,8 @@ public class DiscountService {
         return discountRepository.getAllDiscounts();
     }
 
-    // ─────────────────────────────────────────────────────────────
-    //  ORDER — Apply active discount to an order amount
-    // ─────────────────────────────────────────────────────────────
     /**
-     * Returns the discount rate (%) to apply on the given order amount.
-     * Returns 0 if no active discount exists or is found.
+     * Returns the discount rate (%) to apply on the given order amount.Returns 0 if no active discount exists or is found.
      */
     public double applyDiscount(double orderAmount) {
         List<Discount> activeDiscounts = discountRepository.getActiveDiscounts();
@@ -89,9 +70,6 @@ public class DiscountService {
         return mostProfitableForAdmin != null ? mostProfitableForAdmin.getDiscountRate() : 0;
     }
 
-    /**
-     * Convenience: returns the active Discounts list.
-     */
     public List<Discount> getActiveDiscounts() {
         return discountRepository.getActiveDiscounts();
     }
